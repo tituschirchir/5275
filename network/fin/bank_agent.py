@@ -31,13 +31,10 @@ class Bank(Node):
         self.unallocated_credit = self.balance_sheet.find_node_series("Liabilities", "Interbank").value
         self.unallocated_debt = self.balance_sheet.find_node_series("Assets", "Interbank").value
 
-    def step_1(self):
-        self.equity_change()
-
-    def step_2(self):
-        self.deal_with_shock()
-
     def equity_change(self):
+        if self.defaults:
+            self.price_history.append(self.stock.S)
+            return
         init__s = self.stock.S
         self.stock.evolve()
         common = self.capital.find_node(bst.common_stock)
@@ -54,10 +51,14 @@ class Bank(Node):
         self.balance_sheet.re_aggregate()
 
     def apply_shock(self):
+        if self.defaults:
+            return
         if random.random() > .99:
             self.shock = self.capital.value * random.random()
 
     def deal_with_shock(self, tremor=True):
+        if self.defaults:
+            return
         # If no shock felt by bank, return
         equity_impact = 0.0
         recovery = 0.6

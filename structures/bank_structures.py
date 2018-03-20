@@ -28,7 +28,7 @@ class TreeNode:
         node = self
         if node:
             for arg in args:
-                    node = node.find_node(arg)
+                node = node.find_node(arg)
         return node
 
     def find_node(self, x):
@@ -122,9 +122,9 @@ class TimeSeries:
         self.vol = self.standard_dev()
 
     def returns(self):
-        as_array = np.asarray(self.series)
-        init_val = as_array[0:self.N - 1]
-        return np.divide(as_array[1:self.N] - init_val, init_val)
+        as_array = np.asarray([x for x in self.series if x != 0.0])
+        init_val = as_array[0:-1]
+        return np.divide(as_array[1:] - init_val, init_val)
 
     def mean_returns(self):
         return np.average(self.returns) * 252
