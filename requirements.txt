@@ -1,0 +1,10 @@
+pandas
+quandl
+networkx
+colorlover
+dash
+dash-renderer
+dash-html-components
+dash-core-components
+scipy
+pandas-datareader

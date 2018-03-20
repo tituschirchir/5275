@@ -1,0 +1,20 @@
+# Agent Based Modeling (with Machine Learning --- coming soon)
+Procedure to get started:
+
+* Clone the repository:
+    * cd /path/to/dir/
+    * git clone https://github.com/tituschirchir/abmlcausm.git
+    * cd **abmlcausm**
+* Create a virtual environment and install required packages
+    * virtualenv abmenv
+    * Activate environment
+        * **Linux**: source abmenv/bin/activate
+        * **Windows**: source abmenv/Scripts/activate
+    * pip install -r requirements.txt
+* Run the program:
+    * python app.py
+    * Go to **http://127.0.0.1:8050/** to launch the dashboard
+    
+ ![alt text](https://raw.githubusercontent.com/tituschirchir/abmlcausm/master/image.png)
+ 
+ Done
