@@ -1,6 +1,6 @@
 import datetime
 from copy import deepcopy
-
+import helpers.global_constants as gc
 import colorlover as cl
 import dash
 import networkx as nx
@@ -8,9 +8,7 @@ import numpy as np
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output
 from plotly.graph_objs import *
-
 from helpers.data_downloader import get_agents, download_all
-from helpers.data_downloader import download_balance_sheet
 from network.fin.fin_model import FinNetwork
 from view.app_html import get_layout
 
@@ -19,14 +17,13 @@ default_tick = 'JPM,BRK.b,BAC,WFC,C,GS,USB,MS,PNC,AXP,BLK,CB,SCHW,BK,CME,AIG,MET
                'AFL,PGR,STI,ALL,MTB,DFS,MCO,TROW,SYF,FITB,KEY,AMP,NTRS,RF,CFG,WLTW,HIG,CMA,HBAN,LNC,PFG,ETFC,XL,L,IVZ,' \
                'CBOE,BEN,AJG,RJF,CINF,UNM,ZION,AMG,RE,NDAQ,TMK,LUK,PBCT,BHF,AIZ,NAVI'
 margin = dict(b=40, l=40, r=0, t=10)
-layouts = ['fruchterman_reingold_layout', 'kamada_kawai_layout', 'circular_layout', 'spring_layout']
 app = dash.Dash(__name__, static_folder='view/assets')
 app.scripts.config.serve_locally = True
 app.css.config.serve_locally = True
 app.title = "Agent-Based Modeling"
 interval_t = 1 * 500
 fresh_agents = get_agents()
-app.layout = get_layout(interval_t, layouts)
+app.layout = get_layout(interval_t, sorted(gc.layouts))
 
 
 def build_graph(model_):
@@ -34,8 +31,7 @@ def build_graph(model_):
     model_graph = nx.Graph()
     for node in model_.schedule.agents:
         model_graph.add_node(node)
-        for edge in node.edges:
-            model_graph.add_edge(edge.node_from, edge.node_to)
+        [model_graph.add_edge(edge.node_from, edge.node_to) for edge in node.edges]
     return model_graph
 
 
@@ -58,14 +54,16 @@ def update_steps(steps=None):
 # Cache raw data
 @app.callback(Output('raw_container', 'hidden'),
               [Input('network-type-input', 'value'), Input('nofbanks', 'value'), Input('prob', 'value'),
-               Input('m_val', 'value'), Input('k_val', 'value')])
-def cache_raw_data(net_type, N=25, p=0.5, m=3, k=3):
+               Input('m_val', 'value'), Input('k_val', 'value'), Input('steps', 'values')])
+def cache_raw_data(net_type, N=25, p=0.5, m=3, k=3, steps=None):
+    if steps is None:
+        steps = []
     global model, data2, end, colors_c, stocks, initiated, agents
     if m >= N:
         N = m + 1
     agents = fresh_agents if N >= len(fresh_agents) else fresh_agents[0:N]
     agents = [deepcopy(x) for x in agents]
-    model = FinNetwork("Net 1", agents, net_type=net_type, p=p, m=m, k=k, steps=[])
+    model = FinNetwork("Net 1", agents, net_type=net_type, p=p, m=m, k=k, steps=steps)
     stocks = [x.name for x in agents]
     colors_ = (cl.to_rgb(cl.interp(cl.scales['6']['qual']['Set1'], len(stocks) * 20)))
     colors_c = np.asarray(colors_)[np.arange(0, len(stocks) * 20, 20)]

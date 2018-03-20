@@ -6,6 +6,10 @@ from products.equities import Stock
 from structures.bank_structures import BalanceSheet
 
 
+def upset(ln, num, den):
+    ln.value -= ln.value * num / den
+
+
 class Bank(Node):
     def __init__(self, name, unique_id, model, data, time_series):
         super().__init__(unique_id, model)
@@ -49,19 +53,11 @@ class Bank(Node):
         self.price_history.append(self.stock.S)
         self.balance_sheet.re_aggregate()
 
-    def apply_initial_shock(self, shock):
-        self.shock = shock
-        if self.externalAssets.value < self.shock:
-            self.externalAssets.value = 0.0
-            self.bad_debt = self.shock - self.externalAssets.value
-        else:
-            self.externalAssets.value -= self.shock
-        self.deal_with_shock(tremor=False)
-        self.balance_sheet.re_aggregate()
+    def apply_shock(self):
+        if random.random() > .99:
+            self.shock = self.capital.value * random.random()
 
     def deal_with_shock(self, tremor=True):
-        if random.random() > .999:
-            self.shock = self.capital.value / 3
         # If no shock felt by bank, return
         equity_impact = 0.0
         recovery = 0.6
@@ -80,15 +76,11 @@ class Bank(Node):
             # if shock cannot be absorbed by liquid assets
             if self.shock > 0.0:
                 illiquid_external_assets = self.balance_sheet.find_node_series("Assets", "External", "Illiquid")
-                recovery_value = illiquid_external_assets.value * recovery
-                disbursable = min(self.shock, recovery_value)
+                disbursable = min(self.shock, illiquid_external_assets.value * recovery)
                 for iln in illiquid_external_assets.get_all_terminal_nodes():
-                    iln.value -= iln.value * disbursable / recovery / illiquid_external_assets.value
+                    iln.value -= iln.value * (disbursable / recovery) / illiquid_external_assets.value
 
-                retained_earnings_hit = disbursable * (1 - recovery) / recovery
-                self.balance_sheet.find_node_series("Equities", bst.retained_earnings).value -= retained_earnings_hit
-
-                equity_impact += disbursable
+                equity_impact += disbursable / recovery
                 self.shock -= disbursable
                 if self.shock > 0.0:
                     self.deal_with_bankruptcy(self.shock)
@@ -96,16 +88,15 @@ class Bank(Node):
             equity = self.balance_sheet.find_node_series("Equities")
             if equity.value < equity_impact:
                 self.defaults = True
+                # equity_impact = equity.value
             for eqty in equity.children:
                 eqty.value -= equity_impact * eqty.value / equity.value
-            equity.re_aggregate()
+            self.balance_sheet.re_aggregate()
             self.stock.S = equity.value / self.issued_shares
 
     def deal_with_bankruptcy(self, residual):
-        if random.random() > 0.5:
-            self.process_bankruptcy(residual)
-        else:
-            self.borrow_to_offset(residual)
+        self.process_bankruptcy(residual)
+        # self.borrow_to_offset(residual)
 
     def process_bankruptcy(self, residual):
         self.defaults = True
@@ -132,7 +123,7 @@ class Bank(Node):
         else:
             self.process_bankruptcy(residual)
 
-    def collect_debts(self, recovery, residual):
+    def collect_debts(self, residual):
         total_loans = sum(x.value for x in self.in_degree)
         fract = residual / total_loans
         if fract < 1:

@@ -38,7 +38,8 @@ def get_side_bar(layouts):
             id='steps',
             options=[
                 {'label': 'Evolve Equity', 'value': 'equity_change'},
-                {'label': 'Apply Shock', 'value': 'deal_with_shock'}
+                {'label': 'Shock!', 'value': 'apply_shock'},
+                {'label': 'Deal with shock', 'value': 'deal_with_shock'}
             ],
             values=[]
         ),
