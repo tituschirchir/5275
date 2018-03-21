@@ -3,6 +3,7 @@ import dash_html_components as html
 
 import network.core.skeleton as ns
 from helpers.global_constants import big_N
+import helpers.global_constants as gc
 
 
 def get_layout(interval_t, layouts):
@@ -21,10 +22,14 @@ def initial_params(interval_t):
 
 def get_main_body():
     return html.Div([
-        html.Div([dcc.Graph(id='live-update-graph-network')], className="six columns"),
-        html.Div([dcc.Graph(id='show-bank-status')], className="six columns"),
-        html.Div([dcc.Graph(id='funnel-graph')], className="six columns"),
-        html.Div([dcc.Graph(id='bs-display')], className="twelve columns")
+        html.Div(dcc.Graph(id='live-update-graph-network'), className="six columns"),
+        html.Div(dcc.Graph(id='show-bank-status'), className="six columns"),
+        html.Div(dcc.Graph(id='funnel-graph'), className="six columns"),
+        html.Div(dcc.Dropdown(id='agent-bs',
+                         options=[{'label': i, 'value': i} for i in gc.network_tickers],
+                         value='JPM',
+                         multi=False), className="two columns"),
+        html.Div(dcc.Graph(id='bs-display'), className="offset nine columns")
     ], className="main")
 
 

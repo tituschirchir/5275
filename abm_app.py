@@ -149,10 +149,11 @@ def update_graph_live(i):
     return dict(data=graphs, layout=layout)
 
 
-@app.callback(Output('bs-display', 'figure'), [interval_element])
-def update_graph_live(i):
+@app.callback(Output('bs-display', 'figure'), [interval_element, Input('agent-bs', 'value')])
+def update_graph_live(i, agent_bs):
     init()
-    balance_sheet = model.schedule.agents[0].balance_sheet
+    agt = [x for x in model.schedule.agents if x.name == agent_bs][0]
+    balance_sheet = agt.balance_sheet
     assets = balance_sheet.find_node_series("Assets").get_all_terminal_nodes()
     liabilities = balance_sheet.find_node_series("Liabilities").get_all_terminal_nodes()
     equity = balance_sheet.find_node_series("Equities").get_all_terminal_nodes()

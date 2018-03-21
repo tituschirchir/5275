@@ -54,7 +54,7 @@ class Bank(Node):
         if self.defaults:
             return
         if random.random() > .99:
-            self.shock = self.capital.value * random.random()
+            self.shock = self.balance_sheet.find_node("Equities").value/4
 
     def deal_with_shock(self, tremor=True):
         if self.defaults:
@@ -102,13 +102,14 @@ class Bank(Node):
     def process_bankruptcy(self, residual):
         self.defaults = True
         self.shock = 0.0
-        living = [x for x in [y.node_to for y in self.edges] if not x.defaults]
-        self.edges = []
-        k = len(living)
-        if k > 0:
-            for x in living:
-                x.remove_edge(to=self)
-                x.shock += residual / k
+        edge_vals = sum([y.value for y in self.edges if  not y.node_to.defaults])
+        for x in self.edges:
+            if x.node_to.defaults:
+                continue
+            else:
+                shock_val = residual * x.value / edge_vals
+                x.node_to.shock += shock_val
+                x.value -= shock_val
 
     def borrow_to_offset(self, residual):
         all_agents = self.model.schedule.agents
