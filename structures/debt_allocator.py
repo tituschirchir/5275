@@ -1,18 +1,11 @@
 # Allocate debt and credit in batches to avoid overallocation to one entity
 def allocate(banks):
-    initially(banks, len(banks))
-    eventually(banks)
+    batches = 100
+    [allocate_debt_for_bank(bank, batches) for i in range(batches) for bank in banks]
+    [allocate_debt_for_bank(bank, 1) for bank in banks]
 
 
-def initially(banks, batches=5):
-    [allocate_debt(bank, batches) for i in range(batches) for bank in banks]
-
-
-def eventually(banks):
-    [allocate_debt(bank, 1) for bank in banks]
-
-
-def allocate_debt(bank, batches):
+def allocate_debt_for_bank(bank, batches):
     debt_for_session = bank.balance_sheet.find_node_series("Assets", "Interbank").value / batches
     nearby_credit = sum([x.node_to.unallocated_credit for x in bank.edges])
     to_operate = min(bank.unallocated_debt, debt_for_session)

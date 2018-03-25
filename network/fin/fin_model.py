@@ -13,7 +13,7 @@ class FinNetwork(Graph):
         self.schedule.step()
 
     def get_scheduler(self):
-        return StagedActivation(self)
+        return StagedActivation(self.steps)
 
     def initialize_model(self):
         for x in self.schedule.agents:

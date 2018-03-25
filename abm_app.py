@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output
 from plotly.graph_objs import *
 from helpers.data_downloader import get_agents, download_all
 from network.fin.fin_model import FinNetwork
+from structures.bank_structures import deposits_etc
 from view.app_html import get_layout
 
 n_clicks_2 = 0
@@ -48,22 +49,20 @@ def download_data(n_clicks, quarters):
 
 @app.callback(Output('raw_container_2', 'hidden'), [Input('steps', 'values')])
 def update_steps(steps=None):
-    model.schedule.stage_list = steps
+    model.schedule.stage_list = steps + ['no_move']
 
 
 # Cache raw data
 @app.callback(Output('raw_container', 'hidden'),
               [Input('network-type-input', 'value'), Input('nofbanks', 'value'), Input('prob', 'value'),
-               Input('m_val', 'value'), Input('k_val', 'value'), Input('steps', 'values')])
-def cache_raw_data(net_type, N=25, p=0.5, m=3, k=3, steps=None):
-    if steps is None:
-        steps = []
+               Input('m_val', 'value'), Input('k_val', 'value')])
+def cache_raw_data(net_type, N=25, p=0.5, m=3, k=3):
     global model, data2, end, colors_c, stocks, initiated, agents
     if m >= N:
         N = m + 1
     agents = fresh_agents if N >= len(fresh_agents) else fresh_agents[0:N]
     agents = [deepcopy(x) for x in agents]
-    model = FinNetwork("Net 1", agents, net_type=net_type, p=p, m=m, k=k, steps=steps)
+    model = FinNetwork("Net 1", agents, net_type=net_type, p=p, m=m, k=k, steps=[])
     stocks = [x.name for x in agents]
     colors_ = (cl.to_rgb(cl.interp(cl.scales['6']['qual']['Set1'], len(stocks) * 20)))
     colors_c = np.asarray(colors_)[np.arange(0, len(stocks) * 20, 20)]
@@ -83,6 +82,7 @@ def update_graph_live(n, net_layout):
     model_graph = build_graph(model)
     txt = [x.name for x in banks]
     equities = [x.balance_sheet.find_node("Equities").value for x in banks]
+    equities = equities + abs(min(equities))
     equities = np.asarray(equities) / sum(equities)
     mx_eq = max(equities)
     equities = equities * 50 / mx_eq + 20
@@ -127,11 +127,16 @@ def init():
 def update_graph(n):
     init()
     x = [x.name for x in agents]
-    trace1 = go.Bar(x=x, y=[x.interbankAssets.value for x in agents], name='Loan Assets')
-    trace2 = go.Bar(x=x, y=[x.externalAssets.value for x in agents], name='External Assets')
-    trace3 = go.Bar(x=x, y=[x.customer_deposits.value for x in agents], name='Deposits')
-    trace4 = go.Bar(x=x, y=[x.interbank_borrowing.value for x in agents], name='Loan Liabilities')
-    trace5 = go.Bar(x=x, y=[x.capital.value for x in agents], name='Capital')
+    trace1 = go.Bar(x=x, y=[x.balance_sheet.find_node_series("Assets", "Interbank").value for x in agents],
+                    name='Loan Assets')
+    trace2 = go.Bar(x=x, y=[x.balance_sheet.find_node_series("Assets", "External").value for x in agents],
+                    name='External Assets')
+    trace3 = go.Bar(x=x,
+                    y=[x.balance_sheet.find_node_series("Liabilities", deposits_etc).value for x in
+                       agents], name='Deposits')
+    trace4 = go.Bar(x=x, y=[x.balance_sheet.find_node_series("Liabilities", "Interbank").value for x in agents],
+                    name='Loan Liabilities')
+    trace5 = go.Bar(x=x, y=[x.balance_sheet.find_node_series("Equities").value for x in agents], name='Capital')
 
     return {
         'data': [trace1, trace2, trace3, trace4, trace5],
